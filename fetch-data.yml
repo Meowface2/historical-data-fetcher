@@ -1,0 +1,34 @@
+name: “Fetch Historical Data”
+
+on:
+  schedule:
+    # runs daily at 06:00 UTC (you can adjust)
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # allows manual runs too
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Fetch & save CSVs
+        env:
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+        run: python fetch_data.py
+
+      - name: Commit & push data
+        run: |
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add BITO_historical.csv BTC_historical.csv
+          git commit -m "Daily data update: $(date +'%Y-%m-%d')" || echo "No changes"
+          git push
